@@ -1,0 +1,55 @@
+server:
+  port: ${SERVER_PORT:8087}
+
+spring:
+  application:
+    name: reducao
+  # banco PRÓPRIO deste microsserviço (H2 em arquivo): histórico das reduções
+  datasource:
+    url: jdbc:h2:file:./reducaodb;AUTO_SERVER=TRUE;LOCK_TIMEOUT=15000
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: ${SHOW_SQL:false}
+    open-in-view: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:jaragua.lmq.cloudamqp.com}
+    port: ${RABBITMQ_PORT:5671}
+    username: ${RABBITMQ_USER:bxvkfpaf}
+    password: ${RABBITMQ_PASSWORD:CpFLf94no4QuOYqQZJTPm0ApyJanUeYY}
+    virtual-host: ${RABBITMQ_VHOST:bxvkfpaf}
+    ssl:
+      enabled: true
+    listener:
+      simple:
+        default-requeue-rejected: false
+        # se a API de vagas estiver fora do ar, tenta de novo algumas vezes antes de desistir da mensagem
+        retry:
+          enabled: true
+          max-attempts: 5
+          initial-interval: 1s
+          multiplier: 2
+
+event:
+  candidatura-criada:
+    exchange: ex-candidatura-criada
+    queue: candidatura-criada
+  candidatura-resultado:
+    exchange: ex-candidatura-resultado
+    queue: candidatura-resultado
+
+vagas:
+  url: ${VAGAS_URL:http://localhost:8083}   # API de vagas (serviço a serviço)
+
+reducao:
+  consumidores: "4-8"      # consumidores em paralelo
+  atraso-simulado-ms: 1000 # demonstração: deixa a candidatura "em análise" por ~1s (0 para desligar)
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %msg%n"
+  level:
+    com.fatec: INFO
